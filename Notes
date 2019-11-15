@@ -1,0 +1,6 @@
+S1 = sigma cores servers
+S2 = sigma ram servers
+
+s3, s4
+
+S1/s3 cmp S2/s4

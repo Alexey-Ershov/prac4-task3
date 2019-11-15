@@ -1,4 +1,4 @@
-<server_conf n="0">
+<configuration n="0">
     <serv core_num="2" ram="4"/>
     <serv core_num="4" ram="8"/>
-</server_conf>
+</configuration>

@@ -14,6 +14,17 @@
 using CharactVect = std::vector<std::pair<int, int>>;
 
 
+struct ParsingResult
+{
+    int conf_num;
+    CharactVect charact_vect;
+
+    ParsingResult(const int&& cn, const CharactVect&& cv)
+        : conf_num {cn},
+          charact_vect {cv}
+    {}
+};
+
 struct VmDeployment
 {
     // # VM -> # Server.
@@ -37,7 +48,7 @@ private:
     std::string req_dir_;
     std::string serv_dir_;
 
-    CharactVect parse_xml_data(const std::string& input_file);
+    ParsingResult parse_xml_data(const std::string& input_file);
     VmDeployment algorithm(const CharactVect& requests,
                            const CharactVect& servers);
     void print_depl_to_file(VmDeployment);
