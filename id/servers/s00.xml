@@ -1,0 +1,4 @@
+<server_conf n="0">
+    <serv core_num="4" ram="8"/>
+    <serv core_num="8" ram="16"/>
+</server_conf>
