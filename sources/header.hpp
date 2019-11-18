@@ -8,6 +8,8 @@
 #include <utility>
 #include <fstream>
 #include <map>
+#include <filesystem>
+#include <functional>
 
 
 // Vector of pairs with cores number and RAM.
@@ -49,9 +51,10 @@ private:
     std::string serv_dir_;
 
     ParsingResult parse_xml_data(const std::string& input_file);
-    VmDeployment algorithm(const CharactVect& requests,
-                           const CharactVect& servers);
-    void print_depl_to_file(VmDeployment);
+    VmDeployment algorithm(ParsingResult& req_conf,
+                           ParsingResult& serv_conf);
+    
+    void print_depl_to_file(const VmDeployment& vm_depl);
 };
 
 
