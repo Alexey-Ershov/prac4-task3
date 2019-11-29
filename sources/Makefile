@@ -11,27 +11,27 @@ COMPILER=g++-9
 
 all: main
 
-main: impl pugi main_obj
-	$(COMPILER) -o $(OUTPUT) impl.o pugi.o main.o
-
-impl: $(HEADER) $(IMPL)
+impl.o: $(HEADER) $(IMPL)
 	$(COMPILER) $(CFLAGS)  \
 		        $(INCLUDES) \
 	            -c \
 	            -o impl.o \
 	            $(IMPL)
 
-pugi: $(PUGIDIR)/pugiconfig.hpp $(PUGIDIR)/pugixml.hpp $(PUGIDIR)/pugixml.cpp
+pugi.o: $(PUGIDIR)/pugiconfig.hpp $(PUGIDIR)/pugixml.hpp $(PUGIDIR)/pugixml.cpp
 	$(COMPILER) $(INCLUDES) \
 	            -c \
 	            -o pugi.o \
 	            $(PUGIDIR)/pugixml.cpp
 
-main_obj: $(HEADER) $(MAIN)
+main.o: $(HEADER) $(MAIN)
 	$(COMPILER) $(CFLAGS) \
 	            -c \
 	            -o main.o \
 	            $(MAIN)
+
+main: impl.o pugi.o main.o
+	$(COMPILER) -o $(OUTPUT) impl.o pugi.o main.o
 
 clean:
 	rm $(OUTPUT) *.o

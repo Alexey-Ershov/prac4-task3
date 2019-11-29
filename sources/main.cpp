@@ -4,7 +4,7 @@
 int main(int argc, char const *argv[])
 {
     try {
-        RecourceDistributor rd;
+        RecourceDistributor rd(2);
         rd.distributeRecources();
     
     } catch (const std::string& err_message) {
