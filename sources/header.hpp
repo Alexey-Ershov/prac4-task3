@@ -61,10 +61,10 @@ struct VmDeployment
 class RecourceDistributor
 {
 public:
-    RecourceDistributor(unsigned depth,
+    RecourceDistributor(unsigned limit,
                         std::string req_dir = "../id/requests",
                         std::string serv_dir = "../id/servers")
-        : limit_ {depth},
+        : limit_ {limit},
           req_dir_ {req_dir},
           serv_dir_ {serv_dir}
         {}

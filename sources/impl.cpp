@@ -34,7 +34,7 @@ RecourceDistributor::parse_xml_data(const std::string& input_file)
 {
     pugi::xml_document doc;
     if (!doc.load_file(input_file.c_str())) {
-        throw std::string("Can't load XML file");
+        throw std::string("Error: Can't load XML file");
     }
 
     CharactVect output_vect;
