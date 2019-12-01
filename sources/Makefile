@@ -34,4 +34,4 @@ main: impl.o pugi.o main.o
 	$(COMPILER) -o $(OUTPUT) impl.o pugi.o main.o
 
 clean:
-	rm $(OUTPUT) *.o
+	rm -rf $(OUTPUT) *.o

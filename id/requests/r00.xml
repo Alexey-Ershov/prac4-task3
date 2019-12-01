@@ -1,5 +1,0 @@
-<configuration n="0">
-    <vm core_num="8" ram="8"/>
-    <vm core_num="4" ram="3"/>
-    <vm core_num="2" ram="4"/>
-</configuration>
