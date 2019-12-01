@@ -48,12 +48,16 @@ struct ParsingResult
 struct VmDeployment
 {
     // # VM -> # Server.
+    int req_conf_num;
+    int serv_conf_num;
     std::unordered_map<unsigned, unsigned> vm_mapping;
     unsigned deployed_vm_num;
     bool was_all_vm_deployed;
 
-    VmDeployment()
-        : deployed_vm_num {0},
+    VmDeployment(int req_conf_num_ = 0, int serv_conf_num_ = 0)
+        : req_conf_num {req_conf_num_},
+          serv_conf_num {serv_conf_num_},
+          deployed_vm_num {0},
           was_all_vm_deployed {false}
     {}
 };
@@ -63,11 +67,18 @@ class RecourceDistributor
 public:
     RecourceDistributor(unsigned limit,
                         std::string req_dir = "../id/requests",
-                        std::string serv_dir = "../id/servers")
+                        std::string serv_dir = "../id/servers",
+                        std::string output_filename = "../results/results.txt")
         : limit_ {limit},
           req_dir_ {req_dir},
-          serv_dir_ {serv_dir}
-        {}
+          serv_dir_ {serv_dir},
+          output_filename_ {output_filename}
+        {
+            std::ofstream ofile {output_filename_};
+            if (!ofile) {
+                throw std::string("File problem (probably invalid filename)");
+            }
+        }
 
     void distributeRecources();
 
@@ -77,6 +88,8 @@ private:
 
     std::string req_dir_;
     std::string serv_dir_;
+
+    std::string output_filename_;
 
     // Internal XML data representation: vector of characteristics and
     // number of configuration.

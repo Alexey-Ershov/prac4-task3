@@ -78,15 +78,12 @@ if __name__ == "__main__":
     cleanDir("id/servers")
 
     req_num, serv_num, req_size, serv_size = parseCmd()
-    print(req_num, serv_num, req_size, serv_size)
 
     rand_flag = False
     for i in range(req_num):
         if req_size is None or rand_flag:
-            req_size = random.randint(10, 20)
+            req_size = random.randint(20, 40)
             rand_flag = True
-
-        print("DEBUG: req_size = {}".format(req_size))
 
         n = str(i)
         if len(n) == 1:
@@ -94,17 +91,13 @@ if __name__ == "__main__":
 
         filename = "./id/requests/" + "r" + n + ".xml"
         
-        print("DEBUG: filename = {}\n".format(filename))
-
         createXml(filename, req_size, i, "vm")
 
     rand_flag = False
     for i in range(serv_num):
         if serv_size is None or rand_flag:
-            serv_size = random.randint(5, 10)
+            serv_size = random.randint(10, 20)
             rand_flag = True
-
-        print("DEBUG: serv_size = {}".format(serv_size))
 
         n = str(i)
         if len(n) == 1:
@@ -112,6 +105,4 @@ if __name__ == "__main__":
 
         filename = "./id/servers/" + "s" + n + ".xml"
         
-        print("DEBUG: filename = {}\n".format(filename))
-
         createXml(filename, serv_size, i, "serv")

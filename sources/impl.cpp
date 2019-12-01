@@ -175,7 +175,7 @@ VmDeployment RecourceDistributor::algorithm(ParsingResult<>& req_conf,
     }
     // </debug_log>
 
-    VmDeployment vm_depl;    
+    VmDeployment vm_depl(req_conf.conf_num, serv_conf.conf_num);
 
     // Greedy algorithm.
     for (unsigned i = 0; i < req_conf.charact_vect.size(); i++) {
@@ -214,7 +214,18 @@ void RecourceDistributor::print_depl_to_file(const VmDeployment& vm_depl,
                                              const ParsingResult<>& req_conf,
                                              const ParsingResult<>& serv_conf)
 {
-    std::cerr << "\n\n" << "=== DEPL ===" << std::endl;
+    std::ofstream ofile(output_filename_, std::ios_base::app);
+    if (!ofile) {
+        throw std::string("File problem (probably invalid filename)");
+    }
+
+    ofile << "Request configuration #" << vm_depl.req_conf_num
+          << std::endl;
+
+    ofile << "Server configuration #" << vm_depl.serv_conf_num
+          << std::endl;
+
+    ofile << "\n=== DEPLOYMENT ===" << std::endl;
 
     std::vector<std::pair<unsigned, unsigned>> depl_vect(
             vm_depl.vm_mapping.begin(), vm_depl.vm_mapping.end());
@@ -230,9 +241,9 @@ void RecourceDistributor::print_depl_to_file(const VmDeployment& vm_depl,
               comparator);
 
     for (const auto& it: depl_vect) {
-        std::cerr << req_conf.charact_vect[it.first].num
-                  << " -> "
-                  << serv_conf.charact_vect[it.second].num << std::endl;
+        ofile << req_conf.charact_vect[it.first].num
+              << " -> "
+              << serv_conf.charact_vect[it.second].num << std::endl;
     }
 
     std::stringstream ss;
@@ -244,17 +255,17 @@ void RecourceDistributor::print_depl_to_file(const VmDeployment& vm_depl,
         dashes << "-";
     }
 
-    std::cerr << dashes.str() << std::endl
-              << ss.str() << std::endl;
+    ofile << dashes.str() << std::endl
+          << ss.str() << std::endl;
 
     if (vm_depl.was_all_vm_deployed) {
-        std::cerr << "All VM deployed: True" << std::endl;
+        ofile << "All VM deployed: True" << std::endl;
     
     } else {
-        std::cerr << "All VM deployed: False" << std::endl;
+        ofile << "All VM deployed: False" << std::endl;
     }
 
-    std::cerr << dashes.str() << std::endl;
+    ofile << dashes.str() << "\n\n\n" << std::endl;
 }
 
 bool RecourceDistributor::try_deploy_vm(VmDeployment& vm_depl,
@@ -504,7 +515,7 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
                                         false);
     
     // DEBUG PRINT0
-    print_depl_to_file(vm_subdepl, req_subconf_copy, serv_subconf_copy);
+    /*print_depl_to_file(vm_subdepl, req_subconf_copy, serv_subconf_copy);*/
     // DEBUG PRINT1
 
     if (vm_subdepl.was_all_vm_deployed) {
