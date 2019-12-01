@@ -7,6 +7,7 @@ namespace fs = std::filesystem;
 
 void RecourceDistributor::distributeRecources()
 {
+    // For each pair of request x server_configuration run algorithm.
     for (const auto& serv_file: fs::directory_iterator(serv_dir_)) {
         for (const auto& req_file: fs::directory_iterator(req_dir_)) {
             ParsingResult req_conf =
@@ -59,29 +60,11 @@ VmDeployment RecourceDistributor::algorithm(ParsingResult<>& req_conf,
                                             CharactVect& serv_load,
                                             bool enable_lim_sch)
 {
-    // <debug_log>
-    std::cerr << "\n\n=== REQUESTS ===" << std::endl;
-    std::cerr << "req_conf_num = " << req_conf.conf_num << std::endl;
-    for (const auto& req: req_conf.charact_vect) {
-        std::cerr << "#" << req.num << "   "
-                  << req.core_num << " : "
-                  << req.ram
-                  << std::endl;
-    }
-    std::cerr << std::endl;
-
-    std::cerr << "=== SERVERS ===" << std::endl;
-    std::cerr << "serv_conf_num = " << serv_conf.conf_num << std::endl;
-    for (const auto& serv: serv_conf.charact_vect) {
-        std::cerr << "#" << serv.num << "   "
-                  << serv.core_num << " : "
-                  << serv.ram
-                  << std::endl;
-    }
-    std::cerr << "\n***************************************\n";
-    // </debug_log>
-
-
+    // Disabled limited search means that this function was called within
+    // limited_search procedure and we don't need to call limited search
+    // again.
+    // If it is enabled we need to find critical resource and
+    // sort lists of data according to this resource.
     if (enable_lim_sch) {
         unsigned sum_core_num_vm = 0;
         unsigned sum_ram_vm = 0;
@@ -96,15 +79,6 @@ VmDeployment RecourceDistributor::algorithm(ParsingResult<>& req_conf,
             sum_core_num_serv += serv.core_num;
             sum_ram_serv += serv.ram;
         }
-
-        std::cerr << std::endl
-                  << "DEBUG: core_ratio: "
-                  << static_cast<double>(sum_core_num_serv) / sum_core_num_vm
-                  << std::endl
-                  << "DEBUG: ram_ratio: "
-                  << static_cast<double>(sum_ram_serv) / sum_ram_vm
-                  << std::endl
-                  << std::endl;
 
         // Critical resource -> number of cores.
         if (static_cast<double>(sum_core_num_serv) / sum_core_num_vm <
@@ -154,27 +128,6 @@ VmDeployment RecourceDistributor::algorithm(ParsingResult<>& req_conf,
         }
     }
 
-    // <debug_log>
-    std::cerr << "\n\n=== REQUESTS ===" << std::endl;
-    std::cerr << "req_conf_num = " << req_conf.conf_num << std::endl;
-    for (const auto& req: req_conf.charact_vect) {
-        std::cerr << "#" << req.num << "   "
-                  << req.core_num << " : "
-                  << req.ram
-                  << std::endl;
-    }
-    std::cerr << std::endl;
-
-    std::cerr << "=== SERVERS ===" << std::endl;
-    std::cerr << "serv_conf_num = " << serv_conf.conf_num << std::endl;
-    for (const auto& serv: serv_conf.charact_vect) {
-        std::cerr << "#" << serv.num << "   "
-                  << serv.core_num << " : "
-                  << serv.ram
-                  << std::endl;
-    }
-    // </debug_log>
-
     VmDeployment vm_depl(req_conf.conf_num, serv_conf.conf_num);
 
     // Greedy algorithm.
@@ -195,8 +148,9 @@ VmDeployment RecourceDistributor::algorithm(ParsingResult<>& req_conf,
             
             } else if (j == serv_conf.charact_vect.size() - 1 and
                        enable_lim_sch) {
-                
-                limited_searching(vm_depl,
+                // Current VM wasn't deployed on any server => run
+                // limited search procedure.
+                limited_search(vm_depl,
                                   i,
                                   req_conf,
                                   serv_conf,
@@ -214,6 +168,8 @@ void RecourceDistributor::print_depl_to_file(const VmDeployment& vm_depl,
                                              const ParsingResult<>& req_conf,
                                              const ParsingResult<>& serv_conf)
 {
+    // Just the pretty print into an output file.
+
     std::ofstream ofile(output_filename_, std::ios_base::app);
     if (!ofile) {
         throw std::string("File problem (probably invalid filename)");
@@ -275,6 +231,9 @@ bool RecourceDistributor::try_deploy_vm(VmDeployment& vm_depl,
                                         const ParsingResult<>& serv_conf,
                                         CharactVect& serv_load)
 {
+    // If current server can contain this VM add VM characteristics
+    // into the load list adn return true value.
+    // Else return false value.
     if (serv_load[serv_num].core_num +
         req_conf.charact_vect[vm_num].core_num <=
         serv_conf.charact_vect[serv_num].core_num
@@ -298,31 +257,23 @@ bool RecourceDistributor::try_deploy_vm(VmDeployment& vm_depl,
 }
 
 void
-RecourceDistributor::limited_searching(VmDeployment& vm_depl,
+RecourceDistributor::limited_search(VmDeployment& vm_depl,
                                        unsigned vm_num,
                                        const ParsingResult<>& req_conf,
                                        const ParsingResult<>& serv_conf,
                                        CharactVect& serv_load)
 {
-    std::cerr << "DEBUG: limited_searching() "
-              << vm_num
-              << std::endl;
-
     // The vector which will be filled with pairs of the form
     // <server_number : available_number_of_critical_resource>.
     using ServForSearch = std::pair<unsigned, unsigned>;
     std::vector<ServForSearch> serv_for_search;
 
-    if (core_num_is_critical_) {
-        std::cerr << "DEBUG: core_num_is_critical_" << std::endl;
-
-    } else {
-        std::cerr << "DEBUG: ram_is_critical_" << std::endl;
-    }
-    
+    // Find servers which can contain current VM.
     for (unsigned j = 0; j < serv_conf.charact_vect.size(); j++) {
-        if (/*(serv_load[j].core_num > 0) and*/
-                ((serv_conf.charact_vect[j].core_num >=
+        // If current server can contain the VM according to the
+        // critical resource we add it to the list of servers for
+        // limited search.
+        if (((serv_conf.charact_vect[j].core_num >=
                 req_conf.charact_vect[vm_num].core_num) and
                 core_num_is_critical_)
                 or
@@ -345,8 +296,7 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
         }
     }
 
-    /*auto serv_for_search_copy {serv_for_search};*/
-
+    // Sort our new list in ascending order.
     auto comparator = [](const ServForSearch& left, const ServForSearch& right)
                       {
                           return left.second > right.second;
@@ -356,23 +306,15 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
               serv_for_search.end(),
               comparator);
 
-    // DEBUG PRINT0
-    unsigned limit = limit_ <= serv_for_search.size() ?
-            limit_ : serv_for_search.size();
-    
-    std::cerr << "DEBUG: limit = " << limit << std::endl;
-    for (unsigned i = 0; i < limit; i++) {
-        std::cerr << "#"
-                  << serv_conf.charact_vect[serv_for_search[i].first].num
-                  << " : "
-                  << serv_for_search[i].second
-                  << std::endl;
-    }
-    // DEBUG PRINT1
-
     // Try to redeploy VM from servers for searching with greedy algorithm.
+
+    // Subconfiguration of VM and server configurations which contain
+    // the piece of data to redeploy.
     ParsingResult<CharactVectWithIndices> req_subconf;
     ParsingResult<CharactVectWithIndices> serv_subconf;
+    
+    // Mappings of subconfiguration index to configuration index to
+    // keep correspondence between theese two structures after sorting.
     std::map<unsigned, unsigned> req_subconf_to_conf;
     std::map<unsigned, unsigned> serv_subconf_to_conf;
     
@@ -380,21 +322,21 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
             std::make_pair(req_conf.charact_vect[vm_num],
                            vm_num));
 
-    /*req_subconf_to_conf[req_subconf.charact_vect.size() - 1] = vm_num;*/
-    std::cerr << "$$$ DEBUG: req_subconf.charact_vect.size() - 1 = "
-              << req_subconf.charact_vect.size() - 1
-              << std::endl;
+    unsigned limit = limit_ <= serv_for_search.size() ?
+            limit_ : serv_for_search.size();
 
+    // Fill subconfigurations of VM and servers to run greedy algorithm with
+    // the needed piece of data.
     for (unsigned i = 0; i < limit; i++) {
+        // Add every server from the list for search to the new
+        // server subconfiguration.
         serv_subconf.charact_vect.emplace_back(
                 std::make_pair(
                     serv_conf.charact_vect[serv_for_search[i].first],
                     serv_for_search[i].first));
 
-        std::cerr << "DEBUG: emplace_back Serv #"
-                  << serv_conf.charact_vect[serv_for_search[i].first].num
-                  << std::endl;
-
+        // Add every VM which was deployed on the current server to the new
+        // vm subconfiguration.
         for (const auto& it: vm_depl.vm_mapping) {
             if (it.second == serv_for_search[i].first) {
                 
@@ -402,22 +344,11 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
                         std::make_pair(
                             req_conf.charact_vect[it.first],
                             it.first));
-
-                /*req_subconf_to_conf[req_subconf.charact_vect.size() - 1] =
-                        it.first;*/
-                
-                std::cerr << "$$$ DEBUG: req_subconf.charact_vect.size() - 1 = "
-                          << req_subconf.charact_vect.size() - 1
-                          << std::endl;
-
-                std::cerr << "DEBUG:     emplace_back VM #"
-                          << req_conf.charact_vect[it.first].num
-                          << std::endl;
             }
         }
-        std::cerr << std::endl;
     }
 
+    // Sort subconfiguration according to the critical resource.
     if (core_num_is_critical_) {
         auto comparator_less = [](const auto& left, const auto& right)
                                {
@@ -459,6 +390,8 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
                   comparator_gr);
     }
 
+    // Fill the mapping from subconfiguration index
+    // initial to configuration index.
     for (unsigned i = 0; i < req_subconf.charact_vect.size(); i++) {
         req_subconf_to_conf[i] =
                 req_subconf.charact_vect[i].second;
@@ -467,38 +400,14 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
     for (unsigned i = 0; i < serv_subconf.charact_vect.size(); i++) {
         serv_subconf_to_conf[i] =
                 serv_subconf.charact_vect[i].second;
-        
-        /*std::cerr << "### DEBUG: serv_subconf.charact_vect.size() - 1 = "
-                  << serv_subconf.charact_vect.size() - 1
-                  << std::endl;*/
     }
 
-    // DEBUG PRINT0
-    std::cerr << "<<< req_subconf_to_conf >>>" << std::endl;
-    for (const auto& it: req_subconf_to_conf) {
-        std::cerr << it.first << " -> " << it.second << std::endl;
-    }
-
-    std::cerr << "<<< serv_subconf_to_conf >>>" << std::endl;
-    for (const auto& it: serv_subconf_to_conf) {
-        std::cerr << it.first << " -> " << it.second << std::endl;
-    }
-    // DEBUG PRINT1
-
-    // DEBUG PRINT0
-    std::cerr << "REQ SUBCONF\n";
-    for (const auto& req: req_subconf.charact_vect) {
-        std::cerr << "#" << req.first.num << std::endl;
-    }
-    std::cerr << "SERV SUBCONF\n";
-    for (const auto& serv: serv_subconf.charact_vect) {
-        std::cerr << "#" << serv.first.num << std::endl;
-    }
-    // DEBUG PRINT1
-
+    // Load list for server subconfiguration.
     CharactVect serv_subload =
             std::vector(serv_subconf.charact_vect.size(), Item());
 
+    // Copies of subconfiguration without indices for passing it to
+    // the algorithm and printing functions.
     ParsingResult req_subconf_copy;
     for (const auto& it: req_subconf.charact_vect) {
         req_subconf_copy.charact_vect.emplace_back(it.first);
@@ -509,15 +418,15 @@ RecourceDistributor::limited_searching(VmDeployment& vm_depl,
         serv_subconf_copy.charact_vect.emplace_back(it.first);
     }
 
+    // Try to redeploy piece of configurations via greedy algorithm
+    // without limited search procedure.
     VmDeployment vm_subdepl = algorithm(req_subconf_copy,
                                         serv_subconf_copy,
                                         serv_subload,
                                         false);
     
-    // DEBUG PRINT0
-    /*print_depl_to_file(vm_subdepl, req_subconf_copy, serv_subconf_copy);*/
-    // DEBUG PRINT1
-
+    // If redeployment was successful update deployment mapping and
+    // server load list.
     if (vm_subdepl.was_all_vm_deployed) {
         for (const auto& it: vm_subdepl.vm_mapping) {
             if (serv_subconf_to_conf[it.second] !=

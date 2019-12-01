@@ -14,6 +14,8 @@
 #include <sstream>
 
 
+// Struct to store information about each item of request or
+// server configuration.
 struct Item
 {
     unsigned num;
@@ -31,6 +33,7 @@ struct Item
 using CharactVect = std::vector<Item>;
 using CharactVectWithIndices = std::vector<std::pair<Item, unsigned>>;
 
+// Struct to store parsed XML data representation.
 template <typename T = CharactVect>
 struct ParsingResult
 {
@@ -45,14 +48,16 @@ struct ParsingResult
     {}
 };
 
+// Struct to store result of VM deployment.
 struct VmDeployment
 {
-    // # VM -> # Server.
     int req_conf_num;
     int serv_conf_num;
-    std::unordered_map<unsigned, unsigned> vm_mapping;
     unsigned deployed_vm_num;
     bool was_all_vm_deployed;
+    
+    // Mapping: # VM -> # Server.
+    std::unordered_map<unsigned, unsigned> vm_mapping;
 
     VmDeployment(int req_conf_num_ = 0, int serv_conf_num_ = 0)
         : req_conf_num {req_conf_num_},
@@ -62,6 +67,7 @@ struct VmDeployment
     {}
 };
 
+// Main class distributing resources of Data Center.
 class RecourceDistributor
 {
 public:
@@ -74,12 +80,14 @@ public:
           serv_dir_ {serv_dir},
           output_filename_ {output_filename}
         {
+            // Clean existing file.
             std::ofstream ofile {output_filename_};
             if (!ofile) {
                 throw std::string("File problem (probably invalid filename)");
             }
         }
 
+    // Main public methon to run recources distribution.
     void distributeRecources();
 
 private:
@@ -91,34 +99,35 @@ private:
 
     std::string output_filename_;
 
-    // Internal XML data representation: vector of characteristics and
-    // number of configuration.
-    /*ParsingResult req_conf_;
-    ParsingResult serv_conf_;*/
-
     unsigned first_available_serv_num_ = 0;
 
     // Flag showing that number of cores is critical resource.
     bool core_num_is_critical_ = false;
 
+    // Method to parse XML data.
     ParsingResult<> parse_xml_data(const std::string& input_file);
+    
+    // Method implementing greedy algorithm with limited search.
     VmDeployment algorithm(ParsingResult<>& req_conf,
                            ParsingResult<>& serv_conf,
                            CharactVect& serv_load,
                            bool enable_lim_sch = true);
     
+    // Method to print resulting deployment into an output file.
     void print_depl_to_file(const VmDeployment& vm_depl,
                             const ParsingResult<>& req_conf,
                             const ParsingResult<>& serv_conf);
-    
+
+    // Method to deploy current VM.
     bool try_deploy_vm(VmDeployment& vm_delp,
                        unsigned vm_num,
                        unsigned serv_num,
                        const ParsingResult<>& req_conf,
                        const ParsingResult<>& serv_conf,
                        CharactVect& serv_load);
-    
-    void limited_searching(VmDeployment& vm_delp,
+
+    // Method implementing limited search procedure.
+    void limited_search(VmDeployment& vm_delp,
                            unsigned vm_num,
                            const ParsingResult<>& req_conf,
                            const ParsingResult<>& serv_conf,
